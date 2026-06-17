@@ -1,102 +1,143 @@
-### 1. Models & Infrastructure (Data Layer Core)
-
-_Create the structured underlying data definitions and styling blocks before building UI or Logic._
-
-- [ ] Define the `BeverageCategory` enum containing the 6 structural classifications (Water, Isotonic, Soft Drinks, Natural Juices, Energy Drinks, Caffeine).
-- [ ] Create a sealed Freezed class `BeverageBlueprint` implementing distinct union factory constructors for the 6 category blueprints with associated default configuration values (e.g., baseline sugar/caffeine per ml).
-- [ ] Create a Freezed model data class for `DrinkLogEntry` featuring fields for `id` (UUID string), `blueprint`, `volumeMl`, `timestamp` (DateTime), and an optional `notes` string.
-- [ ] Create a Freezed model data class for `UserProfileTargets` with fields for `hydrationGoalMl` (int), `sugarCeilingGrams` (int), and `caffeineCeilingMg` (int).
-- [ ] Generate the corresponding `.freezed.dart` and `.g.dart` data serialization boilerplates for all models using `build_runner`.
-- [ ] Implement manual `fromJson` mapping extensions on Firestore document snapshots to safely convert remote maps into type-safe Freezed objects.
-- [ ] Build a custom static `ThemeData` configuration file specifying the core Navy Blue (`#353F72`) as primary and True Black (`#000000`) for structural elements.
-- [ ] Define reusable custom decoration utilities (`BoxDecoration`) for chunky, retro high-contrast container panels and razor-thin borders.
-- [ ] Configure the explicit app text themes (`TextTheme`) utilizing the `google_fonts` package to tie headers to `Press Start 2P` and indices/values to `VT323`.
-- [ ] Define a clean domain helper model/extension to translate current raw intake vs ceiling values into structured visual warning levels (`Safe`, `Warning`, `Danger`).
+# Liquidex — Development Checklist
 
 ---
 
-### 2. UI & Presentation Layer (Pure Visual Layouts)
+## Data & Foundation
 
-_Focus exclusively on building stateless/stateful widgets, structural design elements, and layout flows using hardcoded or dummy variables._
+> Lock this layer completely before touching any other layer. All models, theme tokens, and domain helpers must be stable before UI or logic work begins.
 
-#### Auth Hub
+### Data Models
 
-- [ ] Design the visual viewport container for the High-Tech Authentication Hub using an asymmetric technical panel structure.
-- [ ] Construct the input fields layout for Email and Password with matching pixelated accent frames.
-- [ ] Build a pure layout state switch layout toggle between the "Sign-In" and "Register" view layouts.
-- [ ] Implement a custom pixel-art styled warning error pop-up/dialog overlay displaying hardcoded error text.
+- [ ] Define the `BeverageCategory` enum for the 6 blueprint categories
+- [ ] Build the `BeverageBlueprint` sealed Freezed union with one factory per category and its default metric values
+- [ ] Build the `DrinkLogEntry` Freezed data class with all required log fields
+- [ ] Build the `UserProfileTargets` Freezed data class with the three health ceiling fields
+- [ ] Run `build_runner` to generate all `.freezed.dart` and `.g.dart` files for the models above
+- [ ] Write `fromJson` conversion extensions for mapping raw Firestore document maps into each Freezed model
 
-#### Profile Configuration Screen
+### Theme & Design Tokens
 
-- [ ] Construct the core layout grid for the System Configuration panel.
-- [ ] Implement the slider/numerical visual input layouts for the Hydration Goal limit.
-- [ ] Implement the slider/numerical visual input layouts for the Sugar Ceiling limit.
-- [ ] Implement the slider/numerical visual input layouts for the Caffeine Ceiling limit.
+- [ ] Create the global `ThemeData` file binding the navy primary and true black structural colors
+- [ ] Define the reusable `BoxDecoration` presets for retro panel containers, borders, and card frames
+- [ ] Configure the app `TextTheme` mapping `Press Start 2P` to display headers and `VT323` to data and value fields
 
-#### Main Dashboard
+### Domain Logic
 
-- [ ] Create a multi-column (2-column or 3-column) responsive item grid widget layout to represent individual item slot modules.
-- [ ] Build the structural progress bar/ring card frame component to handle localized metric visualization.
-- [ ] Design the layout header displaying pixelated metadata identification tokens (e.g., ID numbers, localized tracking tags).
-
-#### Logging Modal
-
-- [ ] Construct a bottom sheet modal overlay menu layout triggered by an external floating action button click hook.
-- [ ] Design the internal catalog item selection layout utilizing icon representations for each of the 6 beverage blueprints.
-- [ ] Embed visual layout elements for manual custom parameter tweaks (volume slider element, numeric field input, and optional text notes box).
-- [ ] Build a row panel of layout shortcuts representing quick-log volumetric preset buttons (e.g., 250ml, 330ml, 500ml).
-
-#### History Dashboard
-
-- [ ] Design a scrollable historical diary list stream layout displaying clean, sequential time-ordered row entries.
-- [ ] Wrap the list item row cards inside visual `Dismissible` layout tags to render a bright warning red backdrop when swiped.
-
-#### Analytics View
-
-- [ ] Create an isolated dashboard analytics compartment card using the `fl_chart` library wrapper.
-- [ ] Style the custom line/bar charts with hardcoded mock vectors to preview the historical intake ceilings and target goals.
+- [ ] Write the warning level helper that maps an intake-to-ceiling ratio into `WithinLimit`, `Approaching`, or `Exceeded`
 
 ---
 
-### 3. Business Logic & State Management Layer (The Brain)
+## UI / Presentations / Screens
 
-_Focus on Riverpod providers, navigation management, data transformation logic, and client-side operations._
+> Build all screens and components using hardcoded or dummy data only. No providers, no Firebase calls.
 
-#### GoRouter Layer
+### SignIn Screen
 
-- [ ] Instantiate the global declarative `GoRouter` mapping configuration with specific path definitions for `/auth`, `/dashboard`, `/profile`, and `/history`.
-- [ ] Implement a reactive routing redirect listener that reads authentication states and routes unauthenticated users automatically back to the Auth Hub.
+- [ ] Build the SignIn screen outer panel with the asymmetric retro terminal layout
+- [ ] Build the email and password input fields with pixelated accent border frames
+- [ ] Build the pixel-art error dialog overlay for failed login attempts
+- [ ] Build the navigation link to the SignUp Screen
 
-#### userTargetsProvider
+### SignUp Screen
 
-- [ ] Build a Riverpod `AsyncNotifierProvider` (`userTargetsProvider`) to track, fetch, and globally serve the app state boundaries for profiles upon program boot.
-- [ ] Code the state update actions inside the notifier to manipulate the local profile configurations upon input verification.
+- [ ] Build the SignUp screen outer panel mirroring the SignIn terminal aesthetic
+- [ ] Build the email, password, and confirm password input fields with matching pixel borders
+- [ ] Build the pixel-art error dialog overlay for registration failures
+- [ ] Build the navigation link back to the SignIn Screen
 
-#### dailyBeverageStreamProvider
+### Welcome Screen
 
-- [ ] Build a Riverpod `StreamProvider` that exposes the list of recorded logs recorded within the boundary parameters of the active calendar day.
-- [ ] Create a companion derived Riverpod state selector (`intakeAggregatesProvider`) to process data math calculations (e.g., summing total volume, sugar, and caffeine).
+- [ ] Build the Welcome Screen outer panel and section layout
+- [ ] Build the Hydration Goal slider and numeric input row with its default value pre-filled
+- [ ] Build the Sugar Ceiling slider and numeric input row with its default value pre-filled
+- [ ] Build the Caffeine Ceiling slider and numeric input row with its default value pre-filled
+- [ ] Build the skip/confirm action buttons at the bottom of the screen
 
-#### liquidTrackerController (Optimistic UI)
+### Dex Screen
 
-- [ ] Create a Riverpod `NotifierProvider` controller overseeing the local state mutations of log records.
-- [ ] Implement the optimistic addition event method inside the controller that directly clones the active state and reflects changes locally using Freezed `copyWith` prior to executing external transactions.
-- [ ] Implement the optimistic deletion sequence method inside the notifier to instantly hide a record upon a swipe trigger gesture while awaiting synchronization completion.
+- [ ] Build the responsive 2 or 3-column blueprint grid that fills the main screen body
+- [ ] Build the per-slot card component showing the entry label, category accent color, and progress bar
+- [ ] Build the pixelated header strip displaying today's date and daily session identifier
+- [ ] Build the global aggregate summary bar showing total hydration, sugar, and caffeine at a glance
+- [ ] Build the FAB button that anchors to the bottom right of the Dex Screen
 
-#### Input Validation & Haptics
+#### FAB Quick-Log Modal (Dex Screen Component)
 
-- [ ] Write client-side validation logic functions returning structured error messages if inputs fall outside strict physical boundaries.
-- [ ] Attach specific physical phone vibration actions (`HapticFeedback.lightImpact` for basic logs, `HapticFeedback.vibrate` for ceiling alerts) onto target button tap executions.
+- [ ] Build the bottom sheet modal container triggered by the FAB
+- [ ] Build the blueprint selection grid inside the modal with a color-coded icon per category
+- [ ] Build the volume controls row: preset buttons (250ml, 330ml, 500ml), slider, and numeric field
+- [ ] Build the optional notes text input field at the bottom of the modal
+- [ ] Build the confirm submission button inside the modal
+
+### Log Screen
+
+- [ ] Build the scrollable, time-ordered log entry list layout
+- [ ] Build the individual log entry row card showing index label, category, volume, and timestamp
+- [ ] Wrap each row in a `Dismissible` widget with a danger-red swipe backdrop and delete icon
+
+### Data Screen
+
+- [ ] Build the Data Screen outer container and section layout
+- [ ] Build the analytics chart card using the `fl_chart` package wrapper
+- [ ] Style the chart with hardcoded mock vectors showing intake trends against daily ceiling lines
+
+### Bio Screen
+
+- [ ] Build the Bio Screen outer panel with account detail and target sections
+- [ ] Build the editable Hydration Goal slider and numeric input row displaying the current saved value
+- [ ] Build the editable Sugar Ceiling slider and numeric input row displaying the current saved value
+- [ ] Build the editable Caffeine Ceiling slider and numeric input row displaying the current saved value
+- [ ] Build the save action button that submits updated targets
 
 ---
 
-### 4. Backend & Firebase Integration Layer (Persistence)
+## Business Logic & State Management
 
-_Focus on writing remote data stream linkages, network transaction queries, and database security protocols._
+> Wire providers and controllers only after UI shells are complete. Keep optimistic UI behavior in mind throughout.
 
-- [ ] Map UI email/password authentication submission commands onto the remote `FirebaseAuth.instance.signInWithEmailAndPassword` execution handler.
-- [ ] Map UI registration submission commands onto the remote `FirebaseAuth.instance.createUserWithEmailAndPassword` execution handler.
-- [ ] Build a structural data access class (`FirestoreLogRepository`) mapping Freezed `toJson()` maps onto remote destination paths under `users/{userId}/drinkLogs`.
-- [ ] Implement a real-time Firestore collection snapshot fetch script to read and emit remote adjustments matching the active day timestamp boundaries.
-- [ ] Implement the deep backend removal handler triggering an explicit background request to query and remove the exact Firestore log item mapping to its assigned unique UUID string identifier.
-- [ ] Draft production-ready `firestore.rules` configuration rules that strictly limit document query read/write capabilities to instances where `request.auth.uid == userId`.
+### Navigation
+
+- [ ] Set up the `GoRouter` with route definitions for `/signin`, `/signup`, `/welcome`, `/dex`, `/log`, `/data`, and `/bio`
+- [ ] Add the auth-state redirect listener that routes unauthenticated users back to the SignIn Screen on any protected route access
+
+### `userTargetsProvider`
+
+- [ ] Build the `AsyncNotifierProvider` that fetches and globally exposes user profile targets from Firestore on boot
+- [ ] Implement the update action inside the notifier that saves new target values after client-side validation passes
+
+### `dailyBeverageStreamProvider`
+
+- [ ] Build the `StreamProvider` that emits today's log entries filtered to the current day's timestamp boundaries
+- [ ] Build the derived `intakeAggregatesProvider` that sums the active stream into total hydration, sugar, and caffeine values
+
+### `liquidTrackerController`
+
+- [ ] Build the `NotifierProvider` that holds and manages the local log list state
+- [ ] Implement the optimistic add action that appends the new entry to local state before the Firestore write completes
+- [ ] Implement the optimistic delete action that removes the target entry from local state immediately on swipe before Firestore removal
+
+### Validation & Haptics
+
+- [ ] Write client-side input validation functions that return structured error messages for out-of-range volume and target values
+- [ ] Attach `HapticFeedback.lightImpact` to quick-log preset button taps and `HapticFeedback.vibrate` to ceiling breach events
+
+---
+
+## Backend / Firebase Integration
+
+> Final layer. Connect auth, Firestore reads and writes, and lock down security rules.
+
+### Authentication
+
+- [ ] Connect the SignIn form submission to the Firebase Auth sign-in handler
+- [ ] Connect the SignUp form submission to the Firebase Auth account creation handler
+
+### Firestore
+
+- [ ] Build the `FirestoreLogRepository` class that writes `DrinkLogEntry` objects to the correct Firestore path under the authenticated user
+- [ ] Implement the real-time snapshot listener that streams today's `drinkLogs` documents filtered by current day timestamp boundaries
+- [ ] Implement the delete handler that removes a specific log document from Firestore by its UUID
+
+### Security
+
+- [ ] Write Firestore security rules that restrict all reads and writes to the document owner based on `request.auth.uid`
