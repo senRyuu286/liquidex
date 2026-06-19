@@ -11,27 +11,27 @@ abstract final class AppTheme {
 
   static ThemeData get dark => ThemeData(
     useMaterial3: true,
-    brightness: Brightness.dark,
+    brightness: Brightness.light,
 
     // -----------------------------------------------------------------------
     // Color Scheme
     // -----------------------------------------------------------------------
-    colorScheme: const ColorScheme.dark(
-      primary: AppColors.navyPrimary,
-      onPrimary: AppColors.textPrimary,
+    colorScheme: const ColorScheme.light(
+      primary: AppColors.deepNavy,
+      onPrimary: AppColors.trueWhite,
       secondary: AppColors.electricTeal,
-      onSecondary: AppColors.trueBlack,
+      onSecondary: AppColors.trueWhite,
       error: AppColors.dangerRed,
-      onError: AppColors.textPrimary,
-      surface: AppColors.dimSurface,
-      onSurface: AppColors.textPrimary,
+      onError: AppColors.trueWhite,
+      surface: AppColors.lightSurface,
+      onSurface: AppColors.inkBlack,
     ),
 
     // -----------------------------------------------------------------------
     // Scaffold & Canvas
     // -----------------------------------------------------------------------
-    scaffoldBackgroundColor: AppColors.trueBlack,
-    canvasColor: AppColors.trueBlack,
+    scaffoldBackgroundColor: AppColors.lightSurface,
+    canvasColor: AppColors.lightSurface,
 
     // -----------------------------------------------------------------------
     // Typography
@@ -42,12 +42,14 @@ abstract final class AppTheme {
     // AppBar
     // -----------------------------------------------------------------------
     appBarTheme: AppBarTheme(
-      backgroundColor: AppColors.trueBlack,
-      foregroundColor: AppColors.textPrimary,
+      backgroundColor: AppColors.deepNavy,
+      foregroundColor: AppColors.trueWhite,
       elevation: 0,
       scrolledUnderElevation: 0,
       centerTitle: false,
-      titleTextStyle: AppTextStyles.displayMedium,
+      titleTextStyle: AppTextStyles.displayMedium.copyWith(
+        color: AppColors.trueWhite,
+      ),
       systemOverlayStyle: const SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
         statusBarIconBrightness: Brightness.light,
@@ -59,7 +61,7 @@ abstract final class AppTheme {
     // Retro panel containers used across the Dex grid and Log rows.
     // -----------------------------------------------------------------------
     cardTheme: CardThemeData(
-      color: AppColors.navyPrimary,
+      color: AppColors.lightSurface,
       elevation: 0,
       margin: EdgeInsets.zero,
       shape: RoundedRectangleBorder(
@@ -74,7 +76,7 @@ abstract final class AppTheme {
     // -----------------------------------------------------------------------
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
-      fillColor: AppColors.dimSurface,
+      fillColor: AppColors.lightSurface,
       hintStyle: AppTextStyles.bodySmall,
       errorStyle: AppTextStyles.errorText,
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -84,7 +86,7 @@ abstract final class AppTheme {
       ),
       focusedBorder: const OutlineInputBorder(
         borderRadius: BorderRadius.all(Radius.circular(4)),
-        borderSide: BorderSide(color: AppColors.navyPrimary, width: 1.5),
+        borderSide: BorderSide(color: AppColors.deepNavy, width: 1.5),
       ),
       errorBorder: const OutlineInputBorder(
         borderRadius: BorderRadius.all(Radius.circular(4)),
@@ -102,14 +104,14 @@ abstract final class AppTheme {
     // -----------------------------------------------------------------------
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
-        backgroundColor: AppColors.navyPrimary,
-        foregroundColor: AppColors.textPrimary,
+        backgroundColor: AppColors.deepNavy,
+        foregroundColor: AppColors.trueWhite,
         elevation: 0,
         textStyle: AppTextStyles.buttonLabel,
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.all(Radius.circular(4)),
-          side: BorderSide(color: AppColors.panelBorder, width: 1),
+          side: BorderSide(color: AppColors.deepNavy, width: 1),
         ),
       ),
     ),
@@ -172,8 +174,8 @@ abstract final class AppTheme {
     // Volume input on the logging modal, Welcome, and Bio screens.
     // -----------------------------------------------------------------------
     sliderTheme: const SliderThemeData(
-      activeTrackColor: AppColors.navyPrimary,
-      inactiveTrackColor: AppColors.dimSurface,
+      activeTrackColor: AppColors.deepNavy,
+      inactiveTrackColor: AppColors.panelBorder,
       thumbColor: AppColors.textPrimary,
       overlayColor: Color(0x29353F72),
       trackHeight: 3,

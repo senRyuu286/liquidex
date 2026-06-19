@@ -8,10 +8,20 @@ abstract final class AppColors {
   // ---------------------------------------------------------------------------
 
   /// Primary UI surface. Used for card backgrounds and panel fills.
-  static const Color navyPrimary = Color(0xFF353F72);
+  static const Color navyPrimary = Color(0xFF1E285A);
 
   /// Deep structural base. Used for screen backgrounds and dividers.
   static const Color trueBlack = Color(0xFF000000);
+  static const Color trueWhite = Color(0xFFFFFFFF);
+
+  /// Light UI background. Used for screen backgrounds.
+  static const Color lightSurface = Color(0xFFF7F9FB);
+
+  /// Deep structural navy. Used for AppBar, bottom nav, card fills, and active states.
+  static const Color deepNavy = Color(0xFF1E285A);
+
+  /// Near-black text. Used as primary text on light surfaces.
+  static const Color inkBlack = Color(0xFF191C1E);
 
   // ---------------------------------------------------------------------------
   // Warning Level States
@@ -54,14 +64,14 @@ abstract final class AppColors {
   // ---------------------------------------------------------------------------
 
   /// Razor-thin border color for retro panel outlines.
-  static const Color panelBorder = Color(0xFF4A5290);
+  static const Color panelBorder = Color(0xFFDDE1EF);
 
   /// Muted surface for inactive slots or disabled states.
-  static const Color dimSurface = Color(0xFF1E2340);
+  static const Color dimSurface = Color(0xFF1E285A);
 
-  /// Primary text on dark surfaces.
-  static const Color textPrimary = Color(0xFFFFFFFF);
+  /// Primary text on light surfaces.
+  static const Color textPrimary = Color(0xFF191C1E);
 
   /// Secondary / subdued text for metadata and timestamps.
-  static const Color textSecondary = Color(0xFF8A90B4);
+  static const Color textSecondary = Color(0xFF6B7280);
 }
