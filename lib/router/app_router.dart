@@ -58,6 +58,14 @@ GoRouter appRouter(Ref ref) {
           StatefulShellBranch(
             routes: [
               GoRoute(
+                path: AppRoutes.data,
+                builder: (context, state) => const DataScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
                 path: AppRoutes.dex,
                 builder: (context, state) => const DexScreen(),
               ),
@@ -68,14 +76,6 @@ GoRouter appRouter(Ref ref) {
               GoRoute(
                 path: AppRoutes.log,
                 builder: (context, state) => const LogScreen(),
-              ),
-            ],
-          ),
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: AppRoutes.data,
-                builder: (context, state) => const DataScreen(),
               ),
             ],
           ),
