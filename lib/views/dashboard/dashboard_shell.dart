@@ -19,7 +19,7 @@ class DashboardShell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      extendBody: true,
+      extendBody: false,
       appBar: const TopAppBar(),
       body: navigationShell,
       bottomNavigationBar: BottomNavBar(
