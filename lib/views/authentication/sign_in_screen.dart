@@ -4,15 +4,18 @@ import 'package:go_router/go_router.dart';
 
 import '../../router/app_routes.dart';
 import '../../theme/app_text_styles.dart';
-import '../../view_models/auth_provider.dart';
+import '../../view_models/sign_in_view_model.dart';
 
 class SignInScreen extends ConsumerWidget {
   const SignInScreen({super.key});
 
+  static final _formKey = GlobalKey<FormState>();
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final formKey = GlobalKey<FormState>();
+    final state = ref.watch(signInViewModelProvider);
+    final viewModel = ref.read(signInViewModelProvider.notifier);
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
@@ -20,7 +23,7 @@ class SignInScreen extends ConsumerWidget {
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 28),
           child: Form(
-            key: formKey,
+            key: _formKey,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -53,6 +56,7 @@ class SignInScreen extends ConsumerWidget {
                   padding: const EdgeInsets.only(bottom: 16),
                   child: TextFormField(
                     keyboardType: TextInputType.emailAddress,
+                    onChanged: viewModel.setEmail,
                     decoration: const InputDecoration(labelText: 'Email'),
                   ),
                 ),
@@ -60,15 +64,28 @@ class SignInScreen extends ConsumerWidget {
                   padding: const EdgeInsets.only(bottom: 16),
                   child: TextFormField(
                     obscureText: true,
+                    onChanged: viewModel.setPassword,
                     decoration: const InputDecoration(labelText: 'Password'),
                   ),
                 ),
+                if (state.errorMessage != null)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 16),
+                    child: Text(
+                      state.errorMessage!,
+                      style: AppTextStyles.bodyMedium.copyWith(
+                        color: theme.colorScheme.error,
+                      ),
+                    ),
+                  ),
                 const SizedBox(height: 20),
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: () => ref.read(authProvider.notifier).signIn(),
-                    child: const Text('SIGN IN'),
+                    onPressed: state.isSubmitting ? null : viewModel.submit,
+                    child: Text(
+                      state.isSubmitting ? 'SIGNING IN...' : 'SIGN IN',
+                    ),
                   ),
                 ),
                 const SizedBox(height: 20),

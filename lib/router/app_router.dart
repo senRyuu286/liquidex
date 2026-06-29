@@ -1,7 +1,8 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:go_router/go_router.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../view_models/auth_provider.dart';
+import '../providers/auth_provider.dart';
 import '../views/authentication/sign_in_screen.dart';
 import '../views/authentication/sign_up_screen.dart';
 import '../views/dashboard/bio_screen.dart';
@@ -16,12 +17,18 @@ part 'app_router.g.dart';
 
 @riverpod
 GoRouter appRouter(Ref ref) {
-  ref.watch(authProvider);
+  final authState = ref.watch(authProvider);
 
   return GoRouter(
     initialLocation: AppRoutes.welcome,
     redirect: (context, state) {
-      final isLoggedIn = ref.read(authProvider);
+      if (authState.isLoading) {
+        return null;
+      }
+
+      final User? user = authState.value;
+      final isLoggedIn = user != null;
+
       final onWelcome = state.matchedLocation == AppRoutes.welcome;
       final loggingIn =
           state.matchedLocation == AppRoutes.signIn ||

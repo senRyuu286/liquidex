@@ -4,15 +4,18 @@ import 'package:go_router/go_router.dart';
 
 import '../../router/app_routes.dart';
 import '../../theme/app_text_styles.dart';
-import '../../view_models/auth_provider.dart';
+import '../../view_models/sign_up_view_model.dart';
 
 class SignUpScreen extends ConsumerWidget {
   const SignUpScreen({super.key});
 
+  static final _formKey = GlobalKey<FormState>();
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final formKey = GlobalKey<FormState>();
+    final state = ref.watch(signUpViewModelProvider);
+    final viewModel = ref.read(signUpViewModelProvider.notifier);
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
@@ -20,7 +23,7 @@ class SignUpScreen extends ConsumerWidget {
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 28),
           child: Form(
-            key: formKey,
+            key: _formKey,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -52,6 +55,7 @@ class SignUpScreen extends ConsumerWidget {
                 Padding(
                   padding: const EdgeInsets.only(bottom: 16),
                   child: TextFormField(
+                    onChanged: viewModel.setUsername,
                     decoration: const InputDecoration(labelText: 'Username'),
                   ),
                 ),
@@ -59,6 +63,7 @@ class SignUpScreen extends ConsumerWidget {
                   padding: const EdgeInsets.only(bottom: 16),
                   child: TextFormField(
                     keyboardType: TextInputType.emailAddress,
+                    onChanged: viewModel.setEmail,
                     decoration: const InputDecoration(labelText: 'Email'),
                   ),
                 ),
@@ -66,6 +71,7 @@ class SignUpScreen extends ConsumerWidget {
                   padding: const EdgeInsets.only(bottom: 16),
                   child: TextFormField(
                     obscureText: true,
+                    onChanged: viewModel.setPassword,
                     decoration: const InputDecoration(labelText: 'Password'),
                   ),
                 ),
@@ -73,17 +79,30 @@ class SignUpScreen extends ConsumerWidget {
                   padding: const EdgeInsets.only(bottom: 16),
                   child: TextFormField(
                     obscureText: true,
+                    onChanged: viewModel.setConfirmPassword,
                     decoration: const InputDecoration(
                       labelText: 'Confirm Password',
                     ),
                   ),
                 ),
+                if (state.errorMessage != null)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 16),
+                    child: Text(
+                      state.errorMessage!,
+                      style: AppTextStyles.bodyMedium.copyWith(
+                        color: theme.colorScheme.error,
+                      ),
+                    ),
+                  ),
                 const SizedBox(height: 20),
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: () => ref.read(authProvider.notifier).signIn(),
-                    child: const Text('SIGN UP'),
+                    onPressed: state.isSubmitting ? null : viewModel.submit,
+                    child: Text(
+                      state.isSubmitting ? 'CREATING ACCOUNT...' : 'SIGN UP',
+                    ),
                   ),
                 ),
                 const SizedBox(height: 20),
