@@ -1,15 +1,12 @@
 import 'package:flutter/material.dart';
-
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
+import '../../utils/input_validators.dart';
+import '../../view_models/bio_view_model.dart';
 
-class BioScreen extends StatelessWidget {
+class BioScreen extends ConsumerWidget {
   const BioScreen({super.key});
-
-  static const String _username = 'TRAINER_JUSTIN';
-  static const String _description =
-      "Capstone grinder. Three energy drinks deep into finals week. "
-      "Hydration is a myth I'm trying to debunk.";
 
   static const List<_AchievementPreview> _achievements = [
     _AchievementPreview(
@@ -45,13 +42,17 @@ class BioScreen extends StatelessWidget {
   ];
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final dividerColor = theme.dividerTheme.color ?? theme.colorScheme.outline;
     final sectionLabelStyle = AppTextStyles.entryIndex.copyWith(
       color: theme.colorScheme.onSurfaceVariant,
       letterSpacing: 1.5,
     );
+
+    final state = ref.watch(bioViewModelProvider);
+    final notifier = ref.read(bioViewModelProvider.notifier);
+    final profile = state.profile;
 
     return SingleChildScrollView(
       child: Padding(
@@ -80,7 +81,7 @@ class BioScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    _username,
+                    profile?.username.toUpperCase() ?? 'LOADING...',
                     style: AppTextStyles.displaySmall.copyWith(
                       color: theme.colorScheme.onSurface,
                     ),
@@ -106,7 +107,12 @@ class BioScreen extends StatelessWidget {
               ),
               padding: const EdgeInsets.all(12),
               child: TextFormField(
-                initialValue: _description,
+                // Keyed on profile id so this picks up the real bio
+                // once the profile finishes loading. Not wired to a
+                // save action: no persistence path was specced for
+                // bio text, only the three daily targets below.
+                key: ValueKey(profile?.id),
+                initialValue: profile?.description ?? 'No bio yet.',
                 maxLines: 3,
                 style: AppTextStyles.bodyMedium.copyWith(
                   color: theme.colorScheme.onSurface,
@@ -127,7 +133,6 @@ class BioScreen extends StatelessWidget {
               physics: const NeverScrollableScrollPhysics(),
               mainAxisSpacing: 12,
               crossAxisSpacing: 12,
-              // Optimized ratio tighter than 1.0 ensures clean heights across viewports
               childAspectRatio: 1.15,
               children: _achievements
                   .map(
@@ -139,39 +144,44 @@ class BioScreen extends StatelessWidget {
                   )
                   .toList(),
             ),
-            // Snugged spacing after the tighter GridView
             const SizedBox(height: 16),
 
             Text('DAILY CEILINGS', style: sectionLabelStyle),
             const SizedBox(height: 8),
-            const Padding(
-              padding: EdgeInsets.only(bottom: 16),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16),
               child: _TargetEditorRow(
                 label: 'HYDRATION GOAL',
                 unit: 'ml',
-                value: 2500,
-                min: 500,
-                max: 5000,
+                value: state.hydrationTargetMl,
+                min: kMinHydrationTargetMl,
+                max: kMaxHydrationTargetMl,
+                errorText: state.hydrationError,
+                onChanged: notifier.setHydrationDraft,
               ),
             ),
-            const Padding(
-              padding: EdgeInsets.only(bottom: 16),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16),
               child: _TargetEditorRow(
                 label: 'SUGAR CEILING',
                 unit: 'g',
-                value: 50,
-                min: 0,
-                max: 150,
+                value: state.dailySugarLimitGrams,
+                min: kMinSugarLimitGrams,
+                max: kMaxSugarLimitGrams,
+                errorText: state.sugarError,
+                onChanged: notifier.setSugarDraft,
               ),
             ),
-            const Padding(
-              padding: EdgeInsets.only(bottom: 16),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16),
               child: _TargetEditorRow(
                 label: 'CAFFEINE CEILING',
                 unit: 'mg',
-                value: 400,
-                min: 0,
-                max: 800,
+                value: state.dailyCaffeineLimitMg,
+                min: kMinCaffeineLimitMg,
+                max: kMaxCaffeineLimitMg,
+                errorText: state.caffeineError,
+                onChanged: notifier.setCaffeineDraft,
               ),
             ),
 
@@ -182,8 +192,22 @@ class BioScreen extends StatelessWidget {
               child: SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () {},
-                  child: const Text('SAVE TARGETS'),
+                  onPressed: (state.isSaving || state.hasErrors)
+                      ? null
+                      : () async {
+                          final success = await notifier.save();
+                          if (!context.mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                success
+                                    ? 'Targets saved.'
+                                    : 'Could not save targets. Check the fields above.',
+                              ),
+                            ),
+                          );
+                        },
+                  child: Text(state.isSaving ? 'SAVING...' : 'SAVE TARGETS'),
                 ),
               ),
             ),
@@ -196,7 +220,7 @@ class BioScreen extends StatelessWidget {
 }
 
 /// Local placeholder model for a single achievement badge.
-/// UI-only — will be replaced by a real achievement model later.
+/// UI-only — no achievement model exists yet in the provider layer.
 class _AchievementPreview {
   const _AchievementPreview({
     required this.label,
@@ -209,7 +233,6 @@ class _AchievementPreview {
   final Color accentColor;
 }
 
-/// A single decorative achievement badge: accent swatch + label.
 class _AchievementBadge extends StatelessWidget {
   const _AchievementBadge({
     required this.iconData,
@@ -252,15 +275,19 @@ class _AchievementBadge extends StatelessWidget {
   }
 }
 
-/// A single target editor: label + value readout, plus a draggable
-/// slider that responds locally. Does not persist anywhere yet.
-class _TargetEditorRow extends StatefulWidget {
+/// A single target editor: label + value readout, a draggable slider,
+/// and an optional validation message. Fully controlled by [value]
+/// and [onChanged]; holds no internal state, so the view model stays
+/// the single source of truth.
+class _TargetEditorRow extends StatelessWidget {
   const _TargetEditorRow({
     required this.label,
     required this.unit,
     required this.value,
     required this.min,
     required this.max,
+    required this.onChanged,
+    this.errorText,
   });
 
   final String label;
@@ -268,28 +295,20 @@ class _TargetEditorRow extends StatefulWidget {
   final double value;
   final double min;
   final double max;
-
-  @override
-  State<_TargetEditorRow> createState() => _TargetEditorRowState();
-}
-
-class _TargetEditorRowState extends State<_TargetEditorRow> {
-  late double _currentValue;
-
-  @override
-  void initState() {
-    super.initState();
-    _currentValue = widget.value;
-  }
+  final String? errorText;
+  final ValueChanged<double> onChanged;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final dividerColor = theme.dividerTheme.color ?? theme.colorScheme.outline;
+    final hasError = errorText != null;
 
     return Container(
       decoration: BoxDecoration(
-        border: Border.all(color: dividerColor),
+        border: Border.all(
+          color: hasError ? theme.colorScheme.error : dividerColor,
+        ),
         borderRadius: BorderRadius.circular(4),
       ),
       padding: const EdgeInsets.all(12),
@@ -300,13 +319,13 @@ class _TargetEditorRowState extends State<_TargetEditorRow> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                widget.label,
+                label,
                 style: AppTextStyles.entryIndex.copyWith(
                   color: theme.colorScheme.onSurface,
                 ),
               ),
               Text(
-                '${_currentValue.round()} ${widget.unit}',
+                '${value.round()} $unit',
                 style: AppTextStyles.dataMedium.copyWith(
                   color: theme.colorScheme.primary,
                 ),
@@ -314,15 +333,21 @@ class _TargetEditorRowState extends State<_TargetEditorRow> {
             ],
           ),
           Slider(
-            value: _currentValue,
-            min: widget.min,
-            max: widget.max,
-            onChanged: (newValue) {
-              setState(() {
-                _currentValue = newValue;
-              });
-            },
+            value: value.clamp(min, max),
+            min: min,
+            max: max,
+            onChanged: onChanged,
           ),
+          if (hasError)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                errorText!,
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: theme.colorScheme.error,
+                ),
+              ),
+            ),
         ],
       ),
     );

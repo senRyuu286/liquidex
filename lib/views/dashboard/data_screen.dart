@@ -1,72 +1,19 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 
+import '../../models/drink_log_entry.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
+import '../../theme/category_presentation.dart';
+import '../../view_models/data_view_model.dart';
 
-class DataScreen extends StatelessWidget {
+class DataScreen extends ConsumerWidget {
   const DataScreen({super.key});
 
-  static const String _statusDate = 'JUN 11, 2026';
-
-  static const int _hydrationCurrentMl = 1800;
-  static const int _hydrationTargetMl = 2500;
-  static const double _hydrationPercent = 0.72;
-
-  static const int _sugarCurrentG = 22;
-  static const int _sugarTargetG = 50;
-
-  static const int _caffeineCurrentMg = 140;
-  static const int _caffeineTargetMg = 400;
-
-  static const List<_BeverageBreakdown> _breakdown = [
-    _BeverageBreakdown(name: 'Water', ml: 800, accentColor: AppColors.iceBlue),
-    _BeverageBreakdown(
-      name: 'Isotonic',
-      ml: 300,
-      accentColor: AppColors.electricTeal,
-    ),
-    _BeverageBreakdown(
-      name: 'Soft Drinks',
-      ml: 330,
-      accentColor: AppColors.neonPink,
-    ),
-    _BeverageBreakdown(
-      name: 'Natural Juices',
-      ml: 0,
-      accentColor: AppColors.vibrantOrange,
-    ),
-    _BeverageBreakdown(
-      name: 'Energy Drinks',
-      ml: 0,
-      accentColor: AppColors.acidYellow,
-    ),
-    _BeverageBreakdown(
-      name: 'Caffeine',
-      ml: 250,
-      accentColor: AppColors.deepPurple,
-    ),
-  ];
-
-  static const List<_RecentLogPreview> _recentLogs = [
-    _RecentLogPreview(
-      name: 'GREEN TEA',
-      iconData: Icons.emoji_food_beverage,
-      accentColor: AppColors.deepPurple,
-      time: '10:45 AM',
-      volumeLabel: '+330ml',
-    ),
-    _RecentLogPreview(
-      name: 'WATER',
-      iconData: Icons.water_drop,
-      accentColor: AppColors.iceBlue,
-      time: '08:30 AM',
-      volumeLabel: '+500ml',
-    ),
-  ];
-
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final dividerColor = theme.dividerTheme.color ?? theme.colorScheme.outline;
     final sectionLabelStyle = AppTextStyles.entryIndex.copyWith(
@@ -74,8 +21,17 @@ class DataScreen extends StatelessWidget {
       letterSpacing: 1.5,
     );
 
-    final activeBreakdown = _breakdown.where((b) => b.ml > 0).toList();
-    final totalMl = activeBreakdown.fold<int>(0, (sum, b) => sum + b.ml);
+    final state = ref.watch(dataViewModelProvider);
+    final activeBreakdown = state.breakdown
+        .where((b) => b.totalMl > 0)
+        .toList();
+    final totalMl = activeBreakdown.fold<double>(
+      0,
+      (sum, b) => sum + b.totalMl,
+    );
+    final statusDate = DateFormat(
+      'MMM d, yyyy',
+    ).format(DateTime.now()).toUpperCase();
 
     return SingleChildScrollView(
       child: Padding(
@@ -87,15 +43,9 @@ class DataScreen extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
+                Text('CURRENT STATUS', style: sectionLabelStyle),
                 Text(
-                  'CURRENT STATUS',
-                  style: AppTextStyles.entryIndex.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                    letterSpacing: 1.5,
-                  ),
-                ),
-                Text(
-                  _statusDate,
+                  statusDate,
                   style: AppTextStyles.entryIndex.copyWith(
                     color: theme.colorScheme.onSurface,
                   ),
@@ -145,7 +95,7 @@ class DataScreen extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       Text(
-                        '${(_hydrationPercent * 100).round()}%',
+                        '${(state.hydrationPercent * 100).round()}%',
                         style: AppTextStyles.dataLarge.copyWith(
                           color: theme.colorScheme.onSurface,
                         ),
@@ -154,13 +104,13 @@ class DataScreen extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
                           Text(
-                            _hydrationCurrentMl.toString(),
+                            state.hydrationCurrentMl.round().toString(),
                             style: AppTextStyles.dataMedium.copyWith(
                               color: theme.colorScheme.onSurface,
                             ),
                           ),
                           Text(
-                            '/ $_hydrationTargetMl ML',
+                            '/ ${state.hydrationTargetMl.round()} ML',
                             style: AppTextStyles.bodySmall.copyWith(
                               color: theme.colorScheme.onSurfaceVariant,
                             ),
@@ -170,8 +120,6 @@ class DataScreen extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 12),
-                  // Changing crossAxisAlignment to center avoids the stretch crash
-                  // in unbounded scrolling containers.
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
@@ -202,7 +150,7 @@ class DataScreen extends StatelessWidget {
                           child: Align(
                             alignment: Alignment.bottomCenter,
                             child: FractionallySizedBox(
-                              heightFactor: _hydrationPercent,
+                              heightFactor: state.hydrationPercent,
                               widthFactor: 1,
                               child: Container(color: AppColors.iceBlue),
                             ),
@@ -225,9 +173,9 @@ class DataScreen extends StatelessWidget {
                     label: 'SUGAR',
                     iconData: Icons.hexagon_outlined,
                     accentColor: AppColors.warningAmber,
-                    value: '${_sugarCurrentG}g',
-                    limitLabel: '/ ${_sugarTargetG}g allowed',
-                    percent: _sugarCurrentG / _sugarTargetG,
+                    value: '${state.sugarCurrentGrams.round()}g',
+                    limitLabel: '/ ${state.sugarTargetGrams.round()}g allowed',
+                    percent: state.sugarPercent,
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -236,9 +184,9 @@ class DataScreen extends StatelessWidget {
                     label: 'CAFFEINE',
                     iconData: Icons.bolt,
                     accentColor: AppColors.deepPurple,
-                    value: '${_caffeineCurrentMg}mg',
-                    limitLabel: '/ ${_caffeineTargetMg}mg safe',
-                    percent: _caffeineCurrentMg / _caffeineTargetMg,
+                    value: '${state.caffeineCurrentMg.round()}mg',
+                    limitLabel: '/ ${state.caffeineTargetMg.round()}mg safe',
+                    percent: state.caffeinePercent,
                   ),
                 ),
               ],
@@ -254,67 +202,90 @@ class DataScreen extends StatelessWidget {
                 borderRadius: BorderRadius.circular(4),
               ),
               padding: const EdgeInsets.all(14),
-              child: Row(
-                children: [
-                  Expanded(
-                    flex: 3,
-                    child: SizedBox(
-                      height: 160,
-                      child: PieChart(
-                        PieChartData(
-                          sectionsSpace: 2,
-                          centerSpaceRadius: 36,
-                          sections: activeBreakdown.map((entry) {
-                            final percent = totalMl == 0
-                                ? 0.0
-                                : (entry.ml / totalMl * 100);
-                            return PieChartSectionData(
-                              value: entry.ml.toDouble(),
-                              color: entry.accentColor,
-                              title: '${percent.toStringAsFixed(0)}%',
-                              titleStyle: AppTextStyles.bodySmall.copyWith(
-                                color: theme.colorScheme.onPrimary,
-                                fontWeight: FontWeight.w600,
-                              ),
-                              radius: 48,
-                            );
-                          }).toList(),
+              child: activeBreakdown.isEmpty
+                  ? Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 24),
+                      child: Center(
+                        child: Text(
+                          'No drinks logged yet today.',
+                          style: AppTextStyles.bodySmall.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
                         ),
                       ),
-                    ),
-                  ),
-                  Expanded(
-                    flex: 2,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    )
+                  : Row(
                       children: [
-                        for (int i = 0; i < activeBreakdown.length; i++) ...[
-                          Row(
+                        Expanded(
+                          flex: 3,
+                          child: SizedBox(
+                            height: 160,
+                            child: PieChart(
+                              PieChartData(
+                                sectionsSpace: 2,
+                                centerSpaceRadius: 36,
+                                sections: activeBreakdown.map((entry) {
+                                  final percent = totalMl == 0
+                                      ? 0.0
+                                      : (entry.totalMl / totalMl * 100);
+                                  return PieChartSectionData(
+                                    value: entry.totalMl,
+                                    color: categoryAccentColor(entry.category),
+                                    title: '${percent.toStringAsFixed(0)}%',
+                                    titleStyle: AppTextStyles.bodySmall
+                                        .copyWith(
+                                          color: theme.colorScheme.onPrimary,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                    radius: 48,
+                                  );
+                                }).toList(),
+                              ),
+                            ),
+                          ),
+                        ),
+                        Expanded(
+                          flex: 2,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Container(
-                                width: 10,
-                                height: 10,
-                                color: activeBreakdown[i].accentColor,
-                              ),
-                              const SizedBox(width: 6),
-                              Expanded(
-                                child: Text(
-                                  activeBreakdown[i].name,
-                                  style: AppTextStyles.bodySmall.copyWith(
-                                    color: theme.colorScheme.onSurfaceVariant,
-                                  ),
+                              for (
+                                int i = 0;
+                                i < activeBreakdown.length;
+                                i++
+                              ) ...[
+                                Row(
+                                  children: [
+                                    Container(
+                                      width: 10,
+                                      height: 10,
+                                      color: categoryAccentColor(
+                                        activeBreakdown[i].category,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Expanded(
+                                      child: Text(
+                                        categoryDisplayName(
+                                          activeBreakdown[i].category,
+                                        ),
+                                        style: AppTextStyles.bodySmall.copyWith(
+                                          color: theme
+                                              .colorScheme
+                                              .onSurfaceVariant,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                              ),
+                                if (i < activeBreakdown.length - 1)
+                                  const SizedBox(height: 6),
+                              ],
                             ],
                           ),
-                          if (i < activeBreakdown.length - 1)
-                            const SizedBox(height: 6),
-                        ],
+                        ),
                       ],
                     ),
-                  ),
-                ],
-              ),
             ),
             const SizedBox(height: 16),
 
@@ -339,7 +310,7 @@ class DataScreen extends StatelessWidget {
                           ),
                         ),
                         Text(
-                          'L-03',
+                          'L-${state.recentLogs.length.toString().padLeft(2, '0')}',
                           style: AppTextStyles.entryIndex.copyWith(
                             color: theme.colorScheme.onSurfaceVariant,
                           ),
@@ -348,57 +319,11 @@ class DataScreen extends StatelessWidget {
                     ),
                   ),
                   Divider(color: dividerColor, height: 1),
-                  for (int i = 0; i < _recentLogs.length; i++) ...[
-                    Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 36,
-                            height: 36,
-                            decoration: BoxDecoration(
-                              color: _recentLogs[i].accentColor,
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Icon(
-                              _recentLogs[i].iconData,
-                              color: theme.colorScheme.onPrimary,
-                              size: 18,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  _recentLogs[i].name,
-                                  style: AppTextStyles.bodyMedium.copyWith(
-                                    color: theme.colorScheme.onSurface,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                Text(
-                                  _recentLogs[i].time,
-                                  style: AppTextStyles.bodySmall.copyWith(
-                                    color: theme.colorScheme.onSurfaceVariant,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Text(
-                            _recentLogs[i].volumeLabel,
-                            style: AppTextStyles.bodyMedium.copyWith(
-                              color: theme.colorScheme.onSurface,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    if (i < _recentLogs.length - 1)
-                      Divider(color: dividerColor, height: 1),
-                  ],
+                  ..._buildRecentLogRows(
+                    context,
+                    state.recentLogs,
+                    dividerColor,
+                  ),
                 ],
               ),
             ),
@@ -410,35 +335,84 @@ class DataScreen extends StatelessWidget {
   }
 }
 
-/// Local placeholder model for a single beverage category's intake.
-/// UI-only — will be replaced by a real aggregate model later.
-class _BeverageBreakdown {
-  const _BeverageBreakdown({
-    required this.name,
-    required this.ml,
-    required this.accentColor,
-  });
+List<Widget> _buildRecentLogRows(
+  BuildContext context,
+  List<DrinkLogEntry> recentLogs,
+  Color dividerColor,
+) {
+  final theme = Theme.of(context);
 
-  final String name;
-  final int ml;
-  final Color accentColor;
-}
+  if (recentLogs.isEmpty) {
+    return [
+      Padding(
+        padding: const EdgeInsets.all(16),
+        child: Text(
+          'Nothing logged yet today.',
+          style: AppTextStyles.bodySmall.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ),
+    ];
+  }
 
-/// Local placeholder model for a single recent log entry.
-class _RecentLogPreview {
-  const _RecentLogPreview({
-    required this.name,
-    required this.iconData,
-    required this.accentColor,
-    required this.time,
-    required this.volumeLabel,
-  });
-
-  final String name;
-  final IconData iconData;
-  final Color accentColor;
-  final String time;
-  final String volumeLabel;
+  final rows = <Widget>[];
+  for (var i = 0; i < recentLogs.length; i++) {
+    final log = recentLogs[i];
+    rows.add(
+      Padding(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: categoryAccentColor(log.category),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Icon(
+                categoryIcon(log.category),
+                color: theme.colorScheme.onPrimary,
+                size: 18,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    blueprintFor(log.category).label.toUpperCase(),
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      color: theme.colorScheme.onSurface,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  Text(
+                    DateFormat('h:mm a').format(log.timestamp),
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Text(
+              '+${log.volumeMl.round()}ml',
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: theme.colorScheme.onSurface,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (i < recentLogs.length - 1) {
+      rows.add(Divider(color: dividerColor, height: 1));
+    }
+  }
+  return rows;
 }
 
 /// A bordered metric card showing a label, icon, value, limit, and a

@@ -1,70 +1,49 @@
 import 'package:flutter/material.dart';
-
-import '../../theme/app_colors.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../theme/app_text_styles.dart';
+import '../../theme/category_presentation.dart';
+import '../../utils/warning_level.dart';
+import '../../view_models/dex_view_model.dart';
 
-
-class DexScreen extends StatelessWidget {
+class DexScreen extends ConsumerStatefulWidget {
   const DexScreen({super.key});
 
-  static final List<_BlueprintPreview> _previews = [
-    _BlueprintPreview(
-      index: 1,
-      name: 'Pure H2O',
-      category: 'Water',
-      iconData: Icons.water_drop,
-      accentColor: AppColors.iceBlue,
-      metricsLabel: 'Vol: 500ml | Sugar: 0g',
-    ),
-    _BlueprintPreview(
-      index: 12,
-      name: 'Hydro-Fuel',
-      category: 'Isotonic',
-      iconData: Icons.bolt,
-      accentColor: AppColors.electricTeal,
-      metricsLabel: 'Vol: 330ml | Sugar: 14g',
-    ),
-    _BlueprintPreview(
-      index: 35,
-      name: 'Sugar Bomb',
-      category: 'Soft Drinks',
-      iconData: Icons.local_drink,
-      accentColor: AppColors.neonPink,
-      metricsLabel: 'Vol: 355ml | Sugar: 39g',
-    ),
-    _BlueprintPreview(
-      index: 50,
-      name: "Nature's Blend",
-      category: 'Natural Juices',
-      iconData: Icons.emoji_food_beverage,
-      accentColor: AppColors.vibrantOrange,
-      metricsLabel: 'Vol: 300ml | Sugar: 22g',
-    ),
-    _BlueprintPreview(
-      index: 77,
-      name: 'Overdrive',
-      category: 'Energy Drinks',
-      iconData: Icons.flash_on,
-      accentColor: AppColors.acidYellow,
-      metricsLabel: 'Vol: 330ml | Caffeine: 140mg | Sugar: 27g',
-    ),
-    _BlueprintPreview(
-      index: 99,
-      name: 'Focus Brew',
-      category: 'Caffeine',
-      iconData: Icons.coffee,
-      accentColor: AppColors.deepPurple,
-      metricsLabel: 'Vol: 250ml | Caffeine: 150mg',
-    ),
-  ];
+  @override
+  ConsumerState<DexScreen> createState() => _DexScreenState();
+}
+
+class _DexScreenState extends ConsumerState<DexScreen> {
+  String _query = '';
 
   @override
   Widget build(BuildContext context) {
+    // Fire one haptic the instant overall sugar/caffeine crosses into
+    // "exceeded", then clear the flag so it doesn't re-fire on
+    // unrelated rebuilds.
+    ref.listen<DexViewModelState>(dexViewModelProvider, (previous, next) {
+      if (next.ceilingJustBreached) {
+        HapticFeedback.vibrate();
+        ref.read(dexViewModelProvider.notifier).acknowledgeBreach();
+      }
+    });
+
+    final dexState = ref.watch(dexViewModelProvider);
+
+    final entries = dexState.categorySlots.where((slot) {
+      if (_query.isEmpty) return true;
+      final query = _query.toLowerCase();
+      final blueprint = blueprintFor(slot.category);
+      return blueprint.label.toLowerCase().contains(query) ||
+          categoryDisplayName(slot.category).toLowerCase().contains(query);
+    }).toList();
+
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
         children: [
           TextField(
+            onChanged: (value) => setState(() => _query = value),
             decoration: const InputDecoration(
               prefixIcon: Icon(Icons.search),
               hintText: 'Search Catalog Blueprints...',
@@ -72,13 +51,21 @@ class DexScreen extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Expanded(
-            child: ListView.separated(
-              itemCount: _previews.length,
-              separatorBuilder: (context, index) => const SizedBox(height: 12),
-              itemBuilder: (context, index) {
-                return _BlueprintCard(entry: _previews[index]);
-              },
-            ),
+            child: entries.isEmpty
+                ? Center(
+                    child: Text(
+                      'No blueprints match "$_query".',
+                      style: AppTextStyles.bodyMedium,
+                    ),
+                  )
+                : ListView.separated(
+                    itemCount: entries.length,
+                    separatorBuilder: (context, index) =>
+                        const SizedBox(height: 12),
+                    itemBuilder: (context, index) {
+                      return _BlueprintCard(slot: entries[index]);
+                    },
+                  ),
           ),
         ],
       ),
@@ -86,34 +73,19 @@ class DexScreen extends StatelessWidget {
   }
 }
 
-class _BlueprintPreview {
-  const _BlueprintPreview({
-    required this.index,
-    required this.name,
-    required this.category,
-    required this.iconData,
-    required this.accentColor,
-    required this.metricsLabel,
-  });
-
-  final int index;
-  final String name;
-  final String category;
-  final IconData iconData;
-  final Color accentColor;
-  final String metricsLabel;
-}
-
 class _BlueprintCard extends StatelessWidget {
-  const _BlueprintCard({required this.entry});
+  const _BlueprintCard({required this.slot});
 
-  final _BlueprintPreview entry;
+  final DexCategorySlot slot;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final dividerColor = theme.dividerTheme.color ?? theme.colorScheme.outline;
-    final paddedIndex = entry.index.toString().padLeft(3, '0');
+    final blueprint = blueprintFor(slot.category);
+    final statusLabel = slot.hydrationGoalLevel != null
+        ? _hydrationStatusLabel(slot.hydrationGoalLevel!)
+        : _warningStatusLabel(slot.warningLevel!);
 
     return Container(
       decoration: BoxDecoration(
@@ -124,12 +96,11 @@ class _BlueprintCard extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Index column
             SizedBox(
-              width: 64,
+              width: 80,
               child: Center(
                 child: Text(
-                  'NO. $paddedIndex',
+                  blueprint.entryNumber.toUpperCase(),
                   textAlign: TextAlign.center,
                   style: AppTextStyles.entryIndex.copyWith(
                     color: theme.colorScheme.onSurface,
@@ -138,24 +109,22 @@ class _BlueprintCard extends StatelessWidget {
               ),
             ),
             VerticalDivider(color: dividerColor, width: 1, thickness: 1),
-            // Icon swatch
             Container(
               width: 56,
               height: 56,
               margin: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: entry.accentColor,
+                color: categoryAccentColor(slot.category),
                 borderRadius: BorderRadius.circular(6),
               ),
               child: Center(
                 child: Icon(
-                  entry.iconData,
+                  categoryIcon(slot.category),
                   color: theme.colorScheme.onPrimary,
                   size: 26,
                 ),
               ),
             ),
-            // Name + metrics
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.only(top: 12, bottom: 12, right: 12),
@@ -164,7 +133,7 @@ class _BlueprintCard extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      entry.name,
+                      blueprint.label,
                       style: AppTextStyles.displaySmall.copyWith(
                         color: theme.colorScheme.onSurface,
                       ),
@@ -173,7 +142,7 @@ class _BlueprintCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      entry.metricsLabel,
+                      'Vol: ${slot.totalVolumeMl.round()}ml today | $statusLabel',
                       style: AppTextStyles.bodySmall.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
@@ -186,5 +155,25 @@ class _BlueprintCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  String _warningStatusLabel(WarningLevel level) {
+    switch (level) {
+      case WarningLevel.withinLimit:
+        return 'Within Limit';
+      case WarningLevel.approaching:
+        return 'Approaching';
+      case WarningLevel.exceeded:
+        return 'Exceeded';
+    }
+  }
+
+  String _hydrationStatusLabel(HydrationGoalLevel level) {
+    switch (level) {
+      case HydrationGoalLevel.withinLimit:
+        return 'In Progress';
+      case HydrationGoalLevel.achieved:
+        return 'Goal Reached';
+    }
   }
 }

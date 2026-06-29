@@ -1,50 +1,27 @@
-import 'package:flutter/material.dart';
+// lib/screens/log/log_screen.dart
 
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
+
+import '../../models/beverage_category.dart';
+import '../../models/drink_log_entry.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
+import '../../theme/category_presentation.dart';
+import '../../view_models/log_view_model.dart';
 
-class LogScreen extends StatelessWidget {
+class LogScreen extends ConsumerWidget {
   const LogScreen({super.key});
 
-  static final List<_LogEntryPreview> _entries = [
-    const _LogEntryPreview(
-      time: '08:15',
-      entryNumber: '#023',
-      title: 'Pure Espresso',
-      chips: ['250 ml', '+120mg Caffeine'],
-      category: _LogCategory.caffeine,
-      note: null,
-    ),
-    const _LogEntryPreview(
-      time: '12:45',
-      entryNumber: '#024',
-      title: 'Workout Hydration',
-      chips: ['750 ml', 'Water Intake'],
-      category: _LogCategory.water,
-      note: null,
-    ),
-    const _LogEntryPreview(
-      time: '16:20',
-      entryNumber: '#025',
-      title: 'Citrus Soda',
-      chips: ['330 ml', '+35g Sugar'],
-      category: _LogCategory.softDrink,
-      note: 'Logged during final project crunch',
-    ),
-  ];
-
-  // Placeholder totals for the footer.
-  static const String _totalWater = '1000ml';
-  static const String _totalSugar = '35g';
-  static const String _totalCaffeine = '120mg';
-
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final state = ref.watch(logViewModelProvider);
+    final entries = state.entries;
 
     return Column(
       children: [
-        // Section header bar
         Container(
           width: double.infinity,
           color: theme.colorScheme.primary,
@@ -59,54 +36,80 @@ class LogScreen extends StatelessWidget {
             ),
           ),
         ),
-
-        // Scrollable timeline list
         Expanded(
-          child: ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: _entries.length,
-            itemBuilder: (context, index) {
-              final entry = _entries[index];
-              final isLast = index == _entries.length - 1;
+          child: entries.isEmpty
+              ? Center(
+                  child: Text(
+                    'No drinks logged yet today.',
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                )
+              : ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: entries.length,
+                  itemBuilder: (context, index) {
+                    final entry = entries[index];
+                    final isLast = index == entries.length - 1;
 
-              // Wrapping the row with IntrinsicHeight solves the layout exception
-              // by enforcing a finite height from the tallest child (_LogEntryCard).
-              return IntrinsicHeight(
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Timeline rail
-                    SizedBox(
-                      width: 24,
-                      child: Column(
+                    return IntrinsicHeight(
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Container(
-                            width: 10,
-                            height: 10,
-                            color: entry.accentColor,
-                          ),
-                          if (!isLast)
-                            Expanded(
-                              child: Container(
-                                width: 2,
-                                color:
-                                    theme.dividerTheme.color ??
-                                    theme.colorScheme.outlineVariant,
-                              ),
+                          SizedBox(
+                            width: 24,
+                            child: Column(
+                              children: [
+                                Container(
+                                  width: 10,
+                                  height: 10,
+                                  color: categoryAccentColor(entry.category),
+                                ),
+                                if (!isLast)
+                                  Expanded(
+                                    child: Container(
+                                      width: 2,
+                                      color:
+                                          theme.dividerTheme.color ??
+                                          theme.colorScheme.outlineVariant,
+                                    ),
+                                  ),
+                              ],
                             ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Dismissible(
+                              key: ValueKey(entry.id),
+                              direction: DismissDirection.endToStart,
+                              background: Container(
+                                margin: const EdgeInsets.only(bottom: 20),
+                                decoration: BoxDecoration(
+                                  color: AppColors.dangerRed,
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                alignment: Alignment.centerRight,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 20,
+                                ),
+                                child: const Icon(
+                                  Icons.delete,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              onDismissed: (_) => ref
+                                  .read(logViewModelProvider.notifier)
+                                  .deleteEntry(entry.id),
+                              child: _LogEntryCard(entry: entry),
+                            ),
+                          ),
                         ],
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(child: _LogEntryCard(entry: entry)),
-                  ],
+                    );
+                  },
                 ),
-              );
-            },
-          ),
         ),
-
-        // Totals footer wrapped in SafeArea to avoid bottom navigation bar overlap
         SafeArea(
           top: false,
           child: Container(
@@ -122,11 +125,17 @@ class LogScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                _TotalRow(label: 'TOTAL WATER: $_totalWater'),
+                _TotalRow(
+                  label: 'TOTAL WATER: ${state.totalHydrationMl.round()}ml',
+                ),
                 const SizedBox(height: 6),
-                _TotalRow(label: 'TOTAL SUGAR: $_totalSugar'),
+                _TotalRow(
+                  label: 'TOTAL SUGAR: ${state.totalSugarGrams.round()}g',
+                ),
                 const SizedBox(height: 6),
-                _TotalRow(label: 'TOTAL CAFFEINE: $_totalCaffeine'),
+                _TotalRow(
+                  label: 'TOTAL CAFFEINE: ${state.totalCaffeineMg.round()}mg',
+                ),
               ],
             ),
           ),
@@ -136,51 +145,38 @@ class LogScreen extends StatelessWidget {
   }
 }
 
-/// Category key used to pick a fixed brand accent color per entry.
-enum _LogCategory { caffeine, water, softDrink }
-
-/// Local placeholder model for a single timeline log entry.
-/// UI-only — will be replaced by a real DrinkLogEntry model later.
-class _LogEntryPreview {
-  const _LogEntryPreview({
-    required this.time,
-    required this.entryNumber,
-    required this.title,
-    required this.chips,
-    required this.category,
-    required this.note,
-  });
-
-  final String time;
-  final String entryNumber;
-  final String title;
-  final List<String> chips;
-  final _LogCategory category;
-  final String? note;
-
-  Color get accentColor {
-    switch (category) {
-      case _LogCategory.caffeine:
-        return AppColors.deepPurple;
-      case _LogCategory.water:
-        return AppColors.iceBlue;
-      case _LogCategory.softDrink:
-        return AppColors.neonPink;
-    }
+List<String> _chipsFor(DrinkLogEntry entry) {
+  final volumeChip = '${entry.volumeMl.round()} ml';
+  switch (entry.category) {
+    case BeverageCategory.water:
+      return [volumeChip, 'Water Intake'];
+    case BeverageCategory.caffeine:
+      return [volumeChip, '+${entry.caffeineMg.round()}mg Caffeine'];
+    case BeverageCategory.energyDrink:
+      return [
+        volumeChip,
+        '+${entry.caffeineMg.round()}mg Caffeine',
+        '+${entry.sugarGrams.round()}g Sugar',
+      ];
+    case BeverageCategory.isotonic:
+    case BeverageCategory.softDrink:
+    case BeverageCategory.naturalJuice:
+      return [volumeChip, '+${entry.sugarGrams.round()}g Sugar'];
   }
 }
 
-/// Card rendering a single timeline entry: time, badge, title, chips,
-/// and an optional note.
 class _LogEntryCard extends StatelessWidget {
   const _LogEntryCard({required this.entry});
 
-  final _LogEntryPreview entry;
+  final DrinkLogEntry entry;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final dividerColor = theme.dividerTheme.color ?? theme.colorScheme.outline;
+    final accentColor = categoryAccentColor(entry.category);
+    final title = blueprintFor(entry.category).label;
+    final chips = _chipsFor(entry);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 20),
@@ -196,7 +192,7 @@ class _LogEntryCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                entry.time,
+                DateFormat('HH:mm').format(entry.timestamp),
                 style: AppTextStyles.dataSmall.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
@@ -219,7 +215,7 @@ class _LogEntryCard extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            'Entry ${entry.entryNumber} - ${entry.title}',
+            '${entry.indexLabel} - $title',
             style: AppTextStyles.displaySmall.copyWith(
               color: theme.colorScheme.onSurface,
             ),
@@ -228,8 +224,8 @@ class _LogEntryCard extends StatelessWidget {
           Wrap(
             spacing: 8,
             runSpacing: 8,
-            children: entry.chips
-                .map((label) => _buildChip(context, label))
+            children: chips
+                .map((label) => _buildChip(context, label, accentColor))
                 .toList(),
           ),
           if (entry.note != null) ...[
@@ -249,13 +245,13 @@ class _LogEntryCard extends StatelessWidget {
     );
   }
 
-  Widget _buildChip(BuildContext context, String label) {
+  Widget _buildChip(BuildContext context, String label, Color accentColor) {
     final theme = Theme.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: entry.accentColor.withValues(alpha: 0.15),
-        border: Border.all(color: entry.accentColor),
+        color: accentColor.withValues(alpha: 0.15),
+        border: Border.all(color: accentColor),
         borderRadius: BorderRadius.circular(4),
       ),
       child: Text(
@@ -268,7 +264,6 @@ class _LogEntryCard extends StatelessWidget {
   }
 }
 
-/// A single row in the totals footer: a small square marker plus a label.
 class _TotalRow extends StatelessWidget {
   const _TotalRow({required this.label});
 
