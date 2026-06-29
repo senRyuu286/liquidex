@@ -8,6 +8,7 @@ import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../theme/category_presentation.dart';
 import '../../view_models/data_view_model.dart';
+import '../../widgets/quick_log_modal.dart';
 
 class DataScreen extends ConsumerWidget {
   const DataScreen({super.key});
@@ -33,304 +34,316 @@ class DataScreen extends ConsumerWidget {
       'MMM d, yyyy',
     ).format(DateTime.now()).toUpperCase();
 
-    return SingleChildScrollView(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // --- Section 1: Status Header ---
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return Stack(
+      children: [
+        SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('CURRENT STATUS', style: sectionLabelStyle),
-                Text(
-                  statusDate,
-                  style: AppTextStyles.entryIndex.copyWith(
-                    color: theme.colorScheme.onSurface,
-                  ),
+                // --- Section 1: Status Header ---
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('CURRENT STATUS', style: sectionLabelStyle),
+                    Text(
+                      statusDate,
+                      style: AppTextStyles.entryIndex.copyWith(
+                        color: theme.colorScheme.onSurface,
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Divider(color: dividerColor),
-            const SizedBox(height: 16),
+                const SizedBox(height: 12),
+                Divider(color: dividerColor),
+                const SizedBox(height: 16),
 
-            // --- Section 2: Liquid Intake Card ---
-            Container(
-              decoration: BoxDecoration(
-                border: Border.all(color: dividerColor),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              padding: const EdgeInsets.all(14),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'LIQUID INTAKE',
-                        style: AppTextStyles.entryIndex.copyWith(
-                          color: theme.colorScheme.onSurface,
-                        ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.all(6),
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.primary,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Icon(
-                          Icons.water_drop,
-                          size: 14,
-                          color: theme.colorScheme.onPrimary,
-                        ),
-                      ),
-                    ],
+                // --- Section 2: Liquid Intake Card ---
+                Container(
+                  decoration: BoxDecoration(
+                    border: Border.all(color: dividerColor),
+                    borderRadius: BorderRadius.circular(4),
                   ),
-                  const SizedBox(height: 8),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    crossAxisAlignment: CrossAxisAlignment.end,
+                  padding: const EdgeInsets.all(14),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        '${(state.hydrationPercent * 100).round()}%',
-                        style: AppTextStyles.dataLarge.copyWith(
-                          color: theme.colorScheme.onSurface,
-                        ),
-                      ),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            state.hydrationCurrentMl.round().toString(),
-                            style: AppTextStyles.dataMedium.copyWith(
+                            'LIQUID INTAKE',
+                            style: AppTextStyles.entryIndex.copyWith(
                               color: theme.colorScheme.onSurface,
                             ),
                           ),
+                          Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.primary,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Icon(
+                              Icons.water_drop,
+                              size: 14,
+                              color: theme.colorScheme.onPrimary,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
                           Text(
-                            '/ ${state.hydrationTargetMl.round()} ML',
-                            style: AppTextStyles.bodySmall.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
+                            '${(state.hydrationPercent * 100).round()}%',
+                            style: AppTextStyles.dataLarge.copyWith(
+                              color: theme.colorScheme.onSurface,
+                            ),
+                          ),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Text(
+                                state.hydrationCurrentMl.round().toString(),
+                                style: AppTextStyles.dataMedium.copyWith(
+                                  color: theme.colorScheme.onSurface,
+                                ),
+                              ),
+                              Text(
+                                '/ ${state.hydrationTargetMl.round()} ML',
+                                style: AppTextStyles.bodySmall.copyWith(
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          SizedBox(
+                            width: 16,
+                            height: 130,
+                            child: Column(
+                              children: List.generate(5, (index) {
+                                return [
+                                  Container(
+                                    height: 1,
+                                    width: 8,
+                                    color: theme.colorScheme.onSurfaceVariant,
+                                  ),
+                                  if (index < 4) const Spacer(),
+                                ];
+                              }).expand((widgets) => widgets).toList(),
+                            ),
+                          ),
+                          Expanded(
+                            child: Container(
+                              height: 130,
+                              decoration: BoxDecoration(
+                                color:
+                                    theme.colorScheme.surfaceContainerHighest,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              clipBehavior: Clip.hardEdge,
+                              child: Align(
+                                alignment: Alignment.bottomCenter,
+                                child: FractionallySizedBox(
+                                  heightFactor: state.hydrationPercent,
+                                  widthFactor: 1,
+                                  child: Container(color: AppColors.iceBlue),
+                                ),
+                              ),
                             ),
                           ),
                         ],
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      SizedBox(
-                        width: 16,
-                        height: 130,
-                        child: Column(
-                          children: List.generate(5, (index) {
-                            return [
-                              Container(
-                                height: 1,
-                                width: 8,
+                ),
+                const SizedBox(height: 16),
+
+                // --- Section 3: Sugar + Caffeine Cards ---
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: _MetricCard(
+                        label: 'SUGAR',
+                        iconData: Icons.hexagon_outlined,
+                        accentColor: AppColors.warningAmber,
+                        value: '${state.sugarCurrentGrams.round()}g',
+                        limitLabel:
+                            '/ ${state.sugarTargetGrams.round()}g allowed',
+                        percent: state.sugarPercent,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _MetricCard(
+                        label: 'CAFFEINE',
+                        iconData: Icons.bolt,
+                        accentColor: AppColors.deepPurple,
+                        value: '${state.caffeineCurrentMg.round()}mg',
+                        limitLabel:
+                            '/ ${state.caffeineTargetMg.round()}mg safe',
+                        percent: state.caffeinePercent,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+
+                // --- Section 4: Beverage Breakdown Pie Chart ---
+                Text('BEVERAGE BREAKDOWN', style: sectionLabelStyle),
+                const SizedBox(height: 8),
+                Container(
+                  decoration: BoxDecoration(
+                    border: Border.all(color: dividerColor),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  padding: const EdgeInsets.all(14),
+                  child: activeBreakdown.isEmpty
+                      ? Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 24),
+                          child: Center(
+                            child: Text(
+                              'No drinks logged yet today.',
+                              style: AppTextStyles.bodySmall.copyWith(
                                 color: theme.colorScheme.onSurfaceVariant,
                               ),
-                              if (index < 4) const Spacer(),
-                            ];
-                          }).expand((widgets) => widgets).toList(),
-                        ),
-                      ),
-                      Expanded(
-                        child: Container(
-                          height: 130,
-                          decoration: BoxDecoration(
-                            color: theme.colorScheme.surfaceContainerHighest,
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          clipBehavior: Clip.hardEdge,
-                          child: Align(
-                            alignment: Alignment.bottomCenter,
-                            child: FractionallySizedBox(
-                              heightFactor: state.hydrationPercent,
-                              widthFactor: 1,
-                              child: Container(color: AppColors.iceBlue),
                             ),
                           ),
+                        )
+                      : Row(
+                          children: [
+                            Expanded(
+                              flex: 3,
+                              child: SizedBox(
+                                height: 160,
+                                child: PieChart(
+                                  PieChartData(
+                                    sectionsSpace: 2,
+                                    centerSpaceRadius: 36,
+                                    sections: activeBreakdown.map((entry) {
+                                      final percent = totalMl == 0
+                                          ? 0.0
+                                          : (entry.totalMl / totalMl * 100);
+                                      return PieChartSectionData(
+                                        value: entry.totalMl,
+                                        color: categoryAccentColor(
+                                          entry.category,
+                                        ),
+                                        title: '${percent.toStringAsFixed(0)}%',
+                                        titleStyle: AppTextStyles.bodySmall
+                                            .copyWith(
+                                              color:
+                                                  theme.colorScheme.onPrimary,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                        radius: 48,
+                                      );
+                                    }).toList(),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            Expanded(
+                              flex: 2,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  for (
+                                    int i = 0;
+                                    i < activeBreakdown.length;
+                                    i++
+                                  ) ...[
+                                    Row(
+                                      children: [
+                                        Container(
+                                          width: 10,
+                                          height: 10,
+                                          color: categoryAccentColor(
+                                            activeBreakdown[i].category,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Expanded(
+                                          child: Text(
+                                            categoryDisplayName(
+                                              activeBreakdown[i].category,
+                                            ),
+                                            style: AppTextStyles.bodySmall
+                                                .copyWith(
+                                                  color: theme
+                                                      .colorScheme
+                                                      .onSurfaceVariant,
+                                                ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    if (i < activeBreakdown.length - 1)
+                                      const SizedBox(height: 6),
+                                  ],
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
+                ),
+                const SizedBox(height: 16),
+
+                // --- Section 5: Recent Logs ---
+                Container(
+                  decoration: BoxDecoration(
+                    border: Border.all(color: dividerColor),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'RECENT LOGS',
+                              style: AppTextStyles.entryIndex.copyWith(
+                                color: theme.colorScheme.onSurface,
+                              ),
+                            ),
+                            Text(
+                              'L-${state.recentLogs.length.toString().padLeft(2, '0')}',
+                              style: AppTextStyles.entryIndex.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Divider(color: dividerColor, height: 1),
+                      ..._buildRecentLogRows(
+                        context,
+                        state.recentLogs,
+                        dividerColor,
                       ),
                     ],
                   ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // --- Section 3: Sugar + Caffeine Cards ---
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: _MetricCard(
-                    label: 'SUGAR',
-                    iconData: Icons.hexagon_outlined,
-                    accentColor: AppColors.warningAmber,
-                    value: '${state.sugarCurrentGrams.round()}g',
-                    limitLabel: '/ ${state.sugarTargetGrams.round()}g allowed',
-                    percent: state.sugarPercent,
-                  ),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _MetricCard(
-                    label: 'CAFFEINE',
-                    iconData: Icons.bolt,
-                    accentColor: AppColors.deepPurple,
-                    value: '${state.caffeineCurrentMg.round()}mg',
-                    limitLabel: '/ ${state.caffeineTargetMg.round()}mg safe',
-                    percent: state.caffeinePercent,
-                  ),
-                ),
+                const SizedBox(height: 24),
               ],
             ),
-            const SizedBox(height: 16),
-
-            // --- Section 4: Beverage Breakdown Pie Chart ---
-            Text('BEVERAGE BREAKDOWN', style: sectionLabelStyle),
-            const SizedBox(height: 8),
-            Container(
-              decoration: BoxDecoration(
-                border: Border.all(color: dividerColor),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              padding: const EdgeInsets.all(14),
-              child: activeBreakdown.isEmpty
-                  ? Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 24),
-                      child: Center(
-                        child: Text(
-                          'No drinks logged yet today.',
-                          style: AppTextStyles.bodySmall.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ),
-                    )
-                  : Row(
-                      children: [
-                        Expanded(
-                          flex: 3,
-                          child: SizedBox(
-                            height: 160,
-                            child: PieChart(
-                              PieChartData(
-                                sectionsSpace: 2,
-                                centerSpaceRadius: 36,
-                                sections: activeBreakdown.map((entry) {
-                                  final percent = totalMl == 0
-                                      ? 0.0
-                                      : (entry.totalMl / totalMl * 100);
-                                  return PieChartSectionData(
-                                    value: entry.totalMl,
-                                    color: categoryAccentColor(entry.category),
-                                    title: '${percent.toStringAsFixed(0)}%',
-                                    titleStyle: AppTextStyles.bodySmall
-                                        .copyWith(
-                                          color: theme.colorScheme.onPrimary,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                    radius: 48,
-                                  );
-                                }).toList(),
-                              ),
-                            ),
-                          ),
-                        ),
-                        Expanded(
-                          flex: 2,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              for (
-                                int i = 0;
-                                i < activeBreakdown.length;
-                                i++
-                              ) ...[
-                                Row(
-                                  children: [
-                                    Container(
-                                      width: 10,
-                                      height: 10,
-                                      color: categoryAccentColor(
-                                        activeBreakdown[i].category,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 6),
-                                    Expanded(
-                                      child: Text(
-                                        categoryDisplayName(
-                                          activeBreakdown[i].category,
-                                        ),
-                                        style: AppTextStyles.bodySmall.copyWith(
-                                          color: theme
-                                              .colorScheme
-                                              .onSurfaceVariant,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                if (i < activeBreakdown.length - 1)
-                                  const SizedBox(height: 6),
-                              ],
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-            ),
-            const SizedBox(height: 16),
-
-            // --- Section 5: Recent Logs ---
-            Container(
-              decoration: BoxDecoration(
-                border: Border.all(color: dividerColor),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'RECENT LOGS',
-                          style: AppTextStyles.entryIndex.copyWith(
-                            color: theme.colorScheme.onSurface,
-                          ),
-                        ),
-                        Text(
-                          'L-${state.recentLogs.length.toString().padLeft(2, '0')}',
-                          style: AppTextStyles.entryIndex.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Divider(color: dividerColor, height: 1),
-                  ..._buildRecentLogRows(
-                    context,
-                    state.recentLogs,
-                    dividerColor,
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 24),
-          ],
+          ),
         ),
-      ),
+        Positioned(right: 16, bottom: 16, child: const _QuickLogFab()),
+      ],
     );
   }
 }
@@ -487,4 +500,38 @@ class _MetricCard extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Square, sharp-cornered FAB (deliberately not the default circular
+/// Material FAB) anchored bottom-right that opens the quick-log
+/// bottom sheet.
+class _QuickLogFab extends StatelessWidget {
+  const _QuickLogFab();
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => _showQuickLogModal(context),
+        child: Container(
+          width: 56,
+          height: 56,
+          decoration: BoxDecoration(
+            color: AppColors.navyPrimary,
+            border: Border.all(color: Colors.white, width: 1),
+          ),
+          child: const Icon(Icons.add, color: Colors.white, size: 28),
+        ),
+      ),
+    );
+  }
+}
+
+void _showQuickLogModal(BuildContext context) {
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    builder: (context) => const QuickLogModal(),
+  );
 }
